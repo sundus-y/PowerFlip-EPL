@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@keyframes fadeFromGreen {
+  0%   { background-color: #86efac; } /* green-300 */
+  60%  { background-color: #dcfce7; } /* green-100 */
+  100% { background-color: #ffffff; }
+}
+
+@keyframes fadeFromRed {
+  0%   { background-color: #fca5a5; } /* red-300 */
+  60%  { background-color: #fee2e2; } /* red-100 */
+  100% { background-color: #ffffff; }
+}
+
+.row-moved-up {
+  animation: fadeFromGreen 1.4s ease-out forwards;
+}
+
+.row-moved-down {
+  animation: fadeFromRed 1.4s ease-out forwards;
+}

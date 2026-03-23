@@ -4,6 +4,7 @@ import CustomTable from '../components/CustomTable';
 import OfficialTable from '../components/OfficialTable';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
+import GameweekScrubber from '../components/GameweekScrubber';
 import { useLeague } from '../hooks/useLeague';
 
 export default function Dashboard() {
@@ -12,6 +13,10 @@ export default function Dashboard() {
     apiKey, setApiKey,
     officialStandings,
     customTable,
+    gameweekSnapshots,
+    maxGameweek,
+    currentGameweek,
+    setCurrentGameweek,
     loading,
     error,
     usingDemoData,
@@ -25,6 +30,15 @@ export default function Dashboard() {
     e.preventDefault();
     setApiKey(inputKey.trim());
   };
+
+  // Determine which table data to display for the current gameweek
+  const isAtMaxGameweek = currentGameweek >= maxGameweek || maxGameweek === 0;
+  const displayTable = (!isAtMaxGameweek && gameweekSnapshots[currentGameweek])
+    ? gameweekSnapshots[currentGameweek]
+    : customTable;
+  const prevGameweekTable = (currentGameweek > 1 && gameweekSnapshots[currentGameweek - 1])
+    ? gameweekSnapshots[currentGameweek - 1]
+    : null;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -111,22 +125,43 @@ export default function Dashboard() {
         {!loading && error && <ErrorMessage message={error} onRetry={retry} />}
 
         {!loading && !error && (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div>
-              <h2 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-blue-600 inline-block"></span>
-                PowerFlip Custom Table
-              </h2>
-              <CustomTable customTable={customTable} officialStandings={officialStandings} />
+          <>
+            {/* Gameweek Scrubber */}
+            {maxGameweek > 0 && (
+              <GameweekScrubber
+                currentGameweek={currentGameweek}
+                maxGameweek={maxGameweek}
+                onGameweekChange={setCurrentGameweek}
+              />
+            )}
+
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <span className="w-3 h-3 rounded-full bg-blue-600 inline-block"></span>
+                  PowerFlip Custom Table
+                  {maxGameweek > 0 && (
+                    <span className="ml-1 text-xs font-normal text-gray-400">
+                      — after GW{currentGameweek}
+                    </span>
+                  )}
+                </h2>
+                <CustomTable
+                  customTable={displayTable}
+                  officialStandings={officialStandings}
+                  prevTable={prevGameweekTable}
+                  gameweek={currentGameweek}
+                />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <span className="w-3 h-3 rounded-full bg-gray-600 inline-block"></span>
+                  Official EPL Table
+                </h2>
+                <OfficialTable officialStandings={officialStandings} />
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                <span className="w-3 h-3 rounded-full bg-gray-600 inline-block"></span>
-                Official EPL Table
-              </h2>
-              <OfficialTable officialStandings={officialStandings} />
-            </div>
-          </div>
+          </>
         )}
       </main>
     </div>
