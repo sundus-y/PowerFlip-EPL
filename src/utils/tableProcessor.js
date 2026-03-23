@@ -29,6 +29,56 @@ function sortAndRank(table) {
   return sorted;
 }
 
+function applyMatch(table, match) {
+  const homeTeamData = match.homeTeam;
+  const awayTeamData = match.awayTeam;
+
+  const homeName = homeTeamData.name;
+  const awayName = awayTeamData.name;
+
+  const homeEntry = table.find(
+    (t) => t.name === homeName || t.shortName === homeTeamData.shortName
+  );
+  const awayEntry = table.find(
+    (t) => t.name === awayName || t.shortName === awayTeamData.shortName
+  );
+
+  if (!homeEntry || !awayEntry) return table;
+
+  const homeGoals = match.score.fullTime.home;
+  const awayGoals = match.score.fullTime.away;
+
+  homeEntry.goalsFor += homeGoals;
+  homeEntry.goalsAgainst += awayGoals;
+  awayEntry.goalsFor += awayGoals;
+  awayEntry.goalsAgainst += homeGoals;
+  homeEntry.goalDifference = homeEntry.goalsFor - homeEntry.goalsAgainst;
+  awayEntry.goalDifference = awayEntry.goalsFor - awayEntry.goalsAgainst;
+
+  homeEntry.played += 1;
+  awayEntry.played += 1;
+
+  const homePos = homeEntry.position;
+  const awayPos = awayEntry.position;
+
+  if (homeGoals > awayGoals) {
+    homeEntry.wins += 1;
+    awayEntry.losses += 1;
+    homeEntry.points += calculatePoints('win', awayPos);
+  } else if (homeGoals < awayGoals) {
+    awayEntry.wins += 1;
+    homeEntry.losses += 1;
+    awayEntry.points += calculatePoints('win', homePos);
+  } else {
+    homeEntry.draws += 1;
+    awayEntry.draws += 1;
+    homeEntry.points += calculatePoints('draw', awayPos);
+    awayEntry.points += calculatePoints('draw', homePos);
+  }
+
+  return sortAndRank(table);
+}
+
 export function processMatches(matches, initialStandings) {
   let table = initializeStandings(initialStandings);
 
@@ -44,54 +94,55 @@ export function processMatches(matches, initialStandings) {
   );
 
   for (const match of sorted) {
-    const homeTeamData = match.homeTeam;
-    const awayTeamData = match.awayTeam;
-
-    const homeName = homeTeamData.name;
-    const awayName = awayTeamData.name;
-
-    const homeEntry = table.find(
-      (t) => t.name === homeName || t.shortName === homeTeamData.shortName
-    );
-    const awayEntry = table.find(
-      (t) => t.name === awayName || t.shortName === awayTeamData.shortName
-    );
-
-    if (!homeEntry || !awayEntry) continue;
-
-    const homeGoals = match.score.fullTime.home;
-    const awayGoals = match.score.fullTime.away;
-
-    homeEntry.goalsFor += homeGoals;
-    homeEntry.goalsAgainst += awayGoals;
-    awayEntry.goalsFor += awayGoals;
-    awayEntry.goalsAgainst += homeGoals;
-    homeEntry.goalDifference = homeEntry.goalsFor - homeEntry.goalsAgainst;
-    awayEntry.goalDifference = awayEntry.goalsFor - awayEntry.goalsAgainst;
-
-    homeEntry.played += 1;
-    awayEntry.played += 1;
-
-    const homePos = homeEntry.position;
-    const awayPos = awayEntry.position;
-
-    if (homeGoals > awayGoals) {
-      homeEntry.wins += 1;
-      awayEntry.losses += 1;
-      homeEntry.points += calculatePoints('win', awayPos);
-    } else if (homeGoals < awayGoals) {
-      awayEntry.wins += 1;
-      homeEntry.losses += 1;
-      awayEntry.points += calculatePoints('win', homePos);
-    } else {
-      homeEntry.draws += 1;
-      awayEntry.draws += 1;
-      homeEntry.points += calculatePoints('draw', awayPos);
-      awayEntry.points += calculatePoints('draw', homePos);
-    }
-
-    table = sortAndRank(table);
+    table = applyMatch(table, match);
   }
 
   return table;
+}
+
+/**
+ * Computes a cumulative table snapshot after each gameweek.
+ * Requires matches to have a `matchday` property (integer).
+ * Returns { snapshots: Array (index = gameweek number), maxGameweek: number }
+ * snapshots[0] is null; snapshots[1] = table after GW1, etc.
+ */
+export function getGameweekSnapshots(matches, initialStandings) {
+  const finished = matches.filter(
+    (m) =>
+      m.status === 'FINISHED' &&
+      m.score?.fullTime?.home != null &&
+      m.score?.fullTime?.away != null &&
+      m.matchday != null
+  );
+
+  if (finished.length === 0) return { snapshots: [], maxGameweek: 0 };
+
+  // Group by matchday and sort within each group chronologically
+  const byGameweek = {};
+  for (const match of finished) {
+    const gw = match.matchday;
+    if (!byGameweek[gw]) byGameweek[gw] = [];
+    byGameweek[gw].push(match);
+  }
+  for (const gw of Object.keys(byGameweek)) {
+    byGameweek[gw].sort((a, b) => new Date(a.utcDate) - new Date(b.utcDate));
+  }
+
+  const maxGameweek = Math.max(...Object.keys(byGameweek).map(Number));
+
+  // snapshots[gw] = shallow copy of each team entry after all GW matches processed
+  const snapshots = new Array(maxGameweek + 1).fill(null);
+  let table = initializeStandings(initialStandings);
+
+  for (let gw = 1; gw <= maxGameweek; gw++) {
+    if (byGameweek[gw]) {
+      for (const match of byGameweek[gw]) {
+        table = applyMatch(table, match);
+      }
+    }
+    // All team fields are primitives so a shallow spread is a complete copy
+    snapshots[gw] = table.map((t) => ({ ...t }));
+  }
+
+  return { snapshots, maxGameweek };
 }

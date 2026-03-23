@@ -13,7 +13,7 @@ function positionArrow(customPos, officialPos) {
   return <span className="text-gray-400">-</span>;
 }
 
-export default function CustomTable({ customTable, officialStandings }) {
+export default function CustomTable({ customTable, officialStandings, prevTable, gameweek }) {
   const officialTable = officialStandings?.standings?.[0]?.table || [];
 
   const getOfficialPosition = (teamName) => {
@@ -22,6 +22,12 @@ export default function CustomTable({ customTable, officialStandings }) {
         t.team.name === teamName ||
         t.team.shortName === teamName
     );
+    return entry?.position ?? null;
+  };
+
+  const getPrevPosition = (teamName) => {
+    if (!prevTable) return null;
+    const entry = prevTable.find((t) => t.name === teamName);
     return entry?.position ?? null;
   };
 
@@ -50,13 +56,21 @@ export default function CustomTable({ customTable, officialStandings }) {
         <tbody>
           {customTable.map((team) => {
             const officialPos = getOfficialPosition(team.name);
+            const prevPos = getPrevPosition(team.name);
+            const movedUp = prevPos != null && team.position < prevPos;
+            const movedDown = prevPos != null && team.position > prevPos;
+            const animClass = movedUp ? 'row-moved-up' : movedDown ? 'row-moved-down' : '';
             return (
               <tr
-                key={team.name}
-                className={`${rowBorderClass(team.position)} bg-white even:bg-gray-50 hover:bg-blue-50 transition-colors`}
+                key={`${team.name}-gw${gameweek ?? 'final'}`}
+                className={`${rowBorderClass(team.position)} ${animClass} bg-white even:bg-gray-50 hover:bg-blue-50 transition-colors`}
               >
                 <td className="px-2 py-1.5 text-center font-semibold text-gray-700">
-                  {team.position}
+                  <div className="flex items-center justify-center gap-0.5">
+                    <span>{team.position}</span>
+                    {movedUp && <span className="text-green-600 text-xs leading-none">▲</span>}
+                    {movedDown && <span className="text-red-500 text-xs leading-none">▼</span>}
+                  </div>
                 </td>
                 <td className="px-3 py-1.5">
                   <div className="flex items-center gap-2">

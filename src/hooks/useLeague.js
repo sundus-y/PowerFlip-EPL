@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { fetchMatches, fetchStandings } from '../services/api';
 import { mockMatches, mockStandings, initialStandings2023 } from '../services/mockData';
-import { processMatches } from '../utils/tableProcessor';
+import { processMatches, getGameweekSnapshots } from '../utils/tableProcessor';
 
 const API_KEY_STORAGE_KEY = 'powerflip:epl:apiKey';
 const DATA_CACHE_STORAGE_KEY = 'powerflip:epl:dataCache';
@@ -76,6 +76,9 @@ export function useLeague() {
   const [matches, setMatches] = useState([]);
   const [officialStandings, setOfficialStandings] = useState(null);
   const [customTable, setCustomTable] = useState([]);
+  const [gameweekSnapshots, setGameweekSnapshots] = useState([]);
+  const [maxGameweek, setMaxGameweek] = useState(0);
+  const [currentGameweek, setCurrentGameweek] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [usingDemoData, setUsingDemoData] = useState(false);
@@ -85,6 +88,10 @@ export function useLeague() {
     setOfficialStandings(mockStandings);
     const table = processMatches(mockMatches, initialStandings2023);
     setCustomTable(table);
+    const { snapshots, maxGameweek: maxGW } = getGameweekSnapshots(mockMatches, initialStandings2023);
+    setGameweekSnapshots(snapshots);
+    setMaxGameweek(maxGW);
+    setCurrentGameweek(maxGW);
     setUsingDemoData(true);
     setError(null);
     setLoading(false);
@@ -108,9 +115,18 @@ export function useLeague() {
 
     const cachedSeasonData = readSeasonCache(season);
     if (cachedSeasonData) {
-      setMatches(cachedSeasonData.matches || []);
-      setOfficialStandings(cachedSeasonData.officialStandings || null);
+      const matchData = cachedSeasonData.matches || [];
+      const standingsData = cachedSeasonData.officialStandings || null;
+      setMatches(matchData);
+      setOfficialStandings(standingsData);
       setCustomTable(cachedSeasonData.customTable || []);
+      const initStandings =
+        INITIAL_STANDINGS[season] ||
+        getFallbackInitialStandings(standingsData?.standings?.[0]?.table || []);
+      const { snapshots, maxGameweek: maxGW } = getGameweekSnapshots(matchData, initStandings);
+      setGameweekSnapshots(snapshots);
+      setMaxGameweek(maxGW);
+      setCurrentGameweek(maxGW);
       setLoading(false);
       return;
     }
@@ -132,6 +148,11 @@ export function useLeague() {
 
       const table = processMatches(matchData, initialStandings);
       setCustomTable(table);
+
+      const { snapshots, maxGameweek: maxGW } = getGameweekSnapshots(matchData, initialStandings);
+      setGameweekSnapshots(snapshots);
+      setMaxGameweek(maxGW);
+      setCurrentGameweek(maxGW);
 
       writeSeasonCache(season, {
         matches: matchData,
@@ -166,6 +187,10 @@ export function useLeague() {
     matches,
     officialStandings,
     customTable,
+    gameweekSnapshots,
+    maxGameweek,
+    currentGameweek,
+    setCurrentGameweek,
     loading,
     error,
     usingDemoData,
