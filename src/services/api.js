@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://api.football-data.org/v4';
+const BASE_URL = import.meta.env.DEV
+  ? '/api/football-data'
+  : 'https://api.football-data.org/v4';
 
 function buildHeaders(apiKey) {
   return { 'X-Auth-Token': apiKey };
