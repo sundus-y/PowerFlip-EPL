@@ -2,6 +2,7 @@ import { useState } from 'react';
 import SeasonSelector from '../components/SeasonSelector';
 import CustomTable from '../components/CustomTable';
 import OfficialTable from '../components/OfficialTable';
+import ComparisonTable from '../components/ComparisonTable';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import GameweekScrubber from '../components/GameweekScrubber';
@@ -13,6 +14,7 @@ export default function Dashboard() {
     apiKey, setApiKey,
     officialStandings,
     customTable,
+    realTable,
     gameweekSnapshots,
     maxGameweek,
     currentGameweek,
@@ -161,6 +163,17 @@ export default function Dashboard() {
                 <OfficialTable officialStandings={officialStandings} />
               </div>
             </div>
+
+            {/* Real vs Reverse comparison */}
+            {realTable.length > 0 && customTable.length > 0 && (
+              <div>
+                <h2 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <span className="w-3 h-3 rounded-full bg-purple-600 inline-block"></span>
+                  Real vs Reverse Table Comparison
+                </h2>
+                <ComparisonTable realTable={realTable} reverseTable={customTable} />
+              </div>
+            )}
           </>
         )}
       </main>

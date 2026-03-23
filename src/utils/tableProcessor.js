@@ -1,5 +1,17 @@
 import { calculatePoints } from './scoring';
 
+/**
+ * Returns the points earned for a match result under standard (real) EPL scoring.
+ *  win  → 3 pts
+ *  draw → 1 pt
+ *  loss → 0 pts
+ */
+function calculateRealPoints(result) {
+  if (result === 'win') return 3;
+  if (result === 'draw') return 1;
+  return 0;
+}
+
 function initializeStandings(initialStandings) {
   return initialStandings.map((team, idx) => ({
     name: team.name,
@@ -29,7 +41,7 @@ function sortAndRank(table) {
   return sorted;
 }
 
-function applyMatch(table, match) {
+function applyMatch(table, match, mode = 'reverse') {
   const homeTeamData = match.homeTeam;
   const awayTeamData = match.awayTeam;
 
@@ -64,22 +76,30 @@ function applyMatch(table, match) {
   if (homeGoals > awayGoals) {
     homeEntry.wins += 1;
     awayEntry.losses += 1;
-    homeEntry.points += calculatePoints('win', awayPos);
+    homeEntry.points += mode === 'real'
+      ? calculateRealPoints('win')
+      : calculatePoints('win', awayPos);
   } else if (homeGoals < awayGoals) {
     awayEntry.wins += 1;
     homeEntry.losses += 1;
-    awayEntry.points += calculatePoints('win', homePos);
+    awayEntry.points += mode === 'real'
+      ? calculateRealPoints('win')
+      : calculatePoints('win', homePos);
   } else {
     homeEntry.draws += 1;
     awayEntry.draws += 1;
-    homeEntry.points += calculatePoints('draw', awayPos);
-    awayEntry.points += calculatePoints('draw', homePos);
+    homeEntry.points += mode === 'real'
+      ? calculateRealPoints('draw')
+      : calculatePoints('draw', awayPos);
+    awayEntry.points += mode === 'real'
+      ? calculateRealPoints('draw')
+      : calculatePoints('draw', homePos);
   }
 
   return sortAndRank(table);
 }
 
-export function processMatches(matches, initialStandings) {
+export function processMatches(matches, initialStandings, mode = 'reverse') {
   let table = initializeStandings(initialStandings);
 
   const finished = matches.filter(
@@ -94,7 +114,7 @@ export function processMatches(matches, initialStandings) {
   );
 
   for (const match of sorted) {
-    table = applyMatch(table, match);
+    table = applyMatch(table, match, mode);
   }
 
   return table;
@@ -106,7 +126,7 @@ export function processMatches(matches, initialStandings) {
  * Returns { snapshots: Array (index = gameweek number), maxGameweek: number }
  * snapshots[0] is null; snapshots[1] = table after GW1, etc.
  */
-export function getGameweekSnapshots(matches, initialStandings) {
+export function getGameweekSnapshots(matches, initialStandings, mode = 'reverse') {
   const finished = matches.filter(
     (m) =>
       m.status === 'FINISHED' &&
@@ -137,7 +157,7 @@ export function getGameweekSnapshots(matches, initialStandings) {
   for (let gw = 1; gw <= maxGameweek; gw++) {
     if (byGameweek[gw]) {
       for (const match of byGameweek[gw]) {
-        table = applyMatch(table, match);
+        table = applyMatch(table, match, mode);
       }
     }
     // All team fields are primitives so a shallow spread is a complete copy
