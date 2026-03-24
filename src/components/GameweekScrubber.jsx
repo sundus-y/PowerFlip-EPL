@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 export default function GameweekScrubber({ currentGameweek, maxGameweek, onGameweekChange }) {
   const [isPlaying, setIsPlaying] = useState(false);
 
-  // Auto-advance one gameweek every 2 seconds while playing.
+  // Auto-advance one gameweek every 250 ms (4 gameweeks/second) while playing.
   // When we reach the last gameweek, don't schedule any more advances;
   // the isPlaying flag is cleared via the play/pause button's restart logic.
   useEffect(() => {
@@ -11,7 +11,7 @@ export default function GameweekScrubber({ currentGameweek, maxGameweek, onGamew
 
     const timer = setTimeout(() => {
       onGameweekChange(currentGameweek + 1);
-    }, 2000);
+    }, 250);
 
     return () => clearTimeout(timer);
   }, [isPlaying, currentGameweek, maxGameweek, onGameweekChange]);
