@@ -5,6 +5,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function LandingPage({ customTable, realTable, matches, loading, onExplore }) {
   const insights = computeInsights(customTable, realTable, matches);
+  const latestSeasonLabel = getLatestSeasonLabel(matches);
 
   const cards = buildCards(insights);
 
@@ -83,7 +84,7 @@ export default function LandingPage({ customTable, realTable, matches, loading, 
           transition={{ delay: 0.9 }}
           className="text-center text-xs font-semibold uppercase tracking-widest text-gray-500 mb-8"
         >
-          2023/24 Season Highlights
+          {latestSeasonLabel} Season Highlights
         </motion.h2>
 
         {loading && (
@@ -109,10 +110,43 @@ export default function LandingPage({ customTable, realTable, matches, loading, 
 
       {/* Footer note */}
       <footer className="text-center text-gray-700 text-xs pb-6">
-        Based on 2023/24 EPL data · Demo mode
+        Based on {latestSeasonLabel} EPL data · Demo mode
       </footer>
     </div>
   );
+}
+
+function getLatestSeasonLabel(matches) {
+  if (!Array.isArray(matches) || matches.length === 0) {
+    return formatSeasonLabel(getCurrentSeasonStartYear());
+  }
+
+  const latestTimestamp = matches.reduce((max, match) => {
+    const timestamp = Date.parse(match?.utcDate || '');
+    return Number.isNaN(timestamp) ? max : Math.max(max, timestamp);
+  }, Number.NEGATIVE_INFINITY);
+
+  if (!Number.isFinite(latestTimestamp)) {
+    return formatSeasonLabel(getCurrentSeasonStartYear());
+  }
+
+  const latestDate = new Date(latestTimestamp);
+  const month = latestDate.getUTCMonth() + 1;
+  const year = latestDate.getUTCFullYear();
+  const seasonStartYear = month >= 7 ? year : year - 1;
+
+  return formatSeasonLabel(seasonStartYear);
+}
+
+function getCurrentSeasonStartYear() {
+  const now = new Date();
+  const month = now.getUTCMonth() + 1;
+  const year = now.getUTCFullYear();
+  return month >= 7 ? year : year - 1;
+}
+
+function formatSeasonLabel(startYear) {
+  return `${startYear}/${String(startYear + 1).slice(2)}`;
 }
 
 function buildCards(insights) {
