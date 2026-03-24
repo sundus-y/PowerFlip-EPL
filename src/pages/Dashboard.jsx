@@ -6,24 +6,22 @@ import ComparisonTable from '../components/ComparisonTable';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import GameweekScrubber from '../components/GameweekScrubber';
-import { useLeague } from '../hooks/useLeague';
 
-export default function Dashboard() {
-  const {
-    season, setSeason,
-    apiKey, setApiKey,
-    officialStandings,
-    customTable,
-    realTable,
-    gameweekSnapshots,
-    maxGameweek,
-    currentGameweek,
-    setCurrentGameweek,
-    loading,
-    error,
-    usingDemoData,
-    retry,
-  } = useLeague();
+export default function Dashboard({
+  season, setSeason,
+  apiKey, setApiKey,
+  officialStandings,
+  customTable,
+  realTable,
+  gameweekSnapshots,
+  maxGameweek,
+  currentGameweek,
+  setCurrentGameweek,
+  loading,
+  error,
+  usingDemoData,
+  retry,
+}) {
 
   const [showApiInput, setShowApiInput] = useState(!import.meta.env.VITE_API_KEY);
   const [inputKey, setInputKey] = useState(apiKey);
