@@ -68,7 +68,9 @@ function ChartTooltip({ active, payload, label }) {
  *                        (index = gameweek number, value = table snapshot)
  *   maxGameweek       – highest gameweek with data
  */
-export default function RankOverTimeChart({ gameweekSnapshots, maxGameweek }) {
+export default function RankOverTimeChart({ gameweekSnapshots, maxGameweek, currentGameweek }) {
+  // Use currentGameweek as the upper bound for the chart data if provided
+  const displayUpTo = currentGameweek ?? maxGameweek;
   // Derive the full team list from the first available snapshot
   let allTeams = [];
   for (let gw = 1; gw <= maxGameweek; gw++) {
@@ -91,7 +93,7 @@ export default function RankOverTimeChart({ gameweekSnapshots, maxGameweek }) {
 
   const [visibleTeams, setVisibleTeams] = useState(() => defaultVisible);
 
-  const chartData = buildChartData(gameweekSnapshots, maxGameweek);
+  const chartData = buildChartData(gameweekSnapshots, displayUpTo);
 
   function toggleTeam(shortName) {
     setVisibleTeams((prev) => {

@@ -114,6 +114,7 @@ export default function Dashboard({
                 <RankOverTimeChart
                   gameweekSnapshots={gameweekSnapshots}
                   maxGameweek={maxGameweek}
+                  currentGameweek={currentGameweek}
                 />
               </div>
             )}
