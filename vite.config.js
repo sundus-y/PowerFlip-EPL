@@ -12,6 +12,15 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    proxy: {
+      '/api/football-data': {
+        target: 'https://api.football-data.org/v4',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/football-data/, ''),
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',
