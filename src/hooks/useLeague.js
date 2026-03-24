@@ -1,78 +1,54 @@
 import { useState, useEffect, useCallback } from 'react';
+import {
+  matches2023, standings2023, initialStandings2023,
+  matches2024, standings2024, initialStandings2024,
+  initialStandings2025,
+} from '../data';
 import { fetchMatches, fetchStandings } from '../services/api';
-import { mockMatches, mockStandings, initialStandings2023 } from '../services/mockData';
 import { processMatches, getGameweekSnapshots } from '../utils/tableProcessor';
 
-const API_KEY_STORAGE_KEY = 'powerflip:epl:apiKey';
-const DATA_CACHE_STORAGE_KEY = 'powerflip:epl:dataCache';
-
-// Initial standings keyed by season start year
-const INITIAL_STANDINGS = {
-  2023: initialStandings2023,
+const STATIC_SEASONS = {
+  2023: { matches: matches2023, officialStandings: standings2023, initialStandings: initialStandings2023 },
+  2024: { matches: matches2024, officialStandings: standings2024, initialStandings: initialStandings2024 },
 };
 
-// Fallback initial standings for other seasons (generic ordering)
-function getFallbackInitialStandings(teams) {
-  return teams.map((t, i) => ({
-    name: t.team.name,
-    shortName: t.team.shortName,
-    crest: t.team.crest,
-    position: i + 1,
+export const CURRENT_SEASON = 2025;
+export const AVAILABLE_SEASONS = [CURRENT_SEASON, ...Object.keys(STATIC_SEASONS).map(Number).sort((a, b) => b - a)];
+
+const CACHE_KEY = `powerflip:epl:season:${CURRENT_SEASON}`;
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours
+
+function readCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const { cachedAt, matches, officialStandings } = JSON.parse(raw);
+    if (Date.now() - cachedAt > CACHE_TTL_MS) return null;
+    return { matches, officialStandings };
+  } catch {
+    return null;
+  }
+}
+
+function writeCache(matches, officialStandings) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ cachedAt: Date.now(), matches, officialStandings }));
+  } catch {
+    // localStorage quota exceeded — silently skip caching
+  }
+}
+
+function getFallbackInitialStandings(standingsData) {
+  return (standingsData?.standings?.[0]?.table || []).map((row) => ({
+    position: row.position,
+    name: row.team.name,
+    shortName: row.team.shortName,
+    crest: row.team.crest,
   }));
 }
 
-function readStoredApiKey() {
-  if (typeof window === 'undefined') return '';
-  return window.localStorage.getItem(API_KEY_STORAGE_KEY) || '';
-}
-
-function writeStoredApiKey(key) {
-  if (typeof window === 'undefined') return;
-
-  if (key) {
-    window.localStorage.setItem(API_KEY_STORAGE_KEY, key);
-    return;
-  }
-
-  window.localStorage.removeItem(API_KEY_STORAGE_KEY);
-}
-
-function readDataCache() {
-  if (typeof window === 'undefined') return {};
-
-  try {
-    const raw = window.localStorage.getItem(DATA_CACHE_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeSeasonCache(season, data) {
-  if (typeof window === 'undefined') return;
-
-  const existingCache = readDataCache();
-  const nextCache = {
-    ...existingCache,
-    [season]: {
-      ...data,
-      updatedAt: new Date().toISOString(),
-    },
-  };
-
-  window.localStorage.setItem(DATA_CACHE_STORAGE_KEY, JSON.stringify(nextCache));
-}
-
-function readSeasonCache(season) {
-  const cache = readDataCache();
-  return cache[season] || null;
-}
-
 export function useLeague() {
-  const [season, setSeason] = useState(2023);
-  const [apiKey, setApiKey] = useState(
-    import.meta.env.VITE_API_KEY || readStoredApiKey()
-  );
+  const [season, setSeason] = useState(CURRENT_SEASON);
   const [matches, setMatches] = useState([]);
   const [officialStandings, setOfficialStandings] = useState(null);
   const [customTable, setCustomTable] = useState([]);
@@ -82,55 +58,45 @@ export function useLeague() {
   const [currentGameweek, setCurrentGameweek] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [usingDemoData, setUsingDemoData] = useState(false);
 
-  const loadDemoData = useCallback(() => {
-    setMatches(mockMatches);
-    setOfficialStandings(mockStandings);
-    const table = processMatches(mockMatches, initialStandings2023);
-    setCustomTable(table);
-    const real = processMatches(mockMatches, initialStandings2023, 'real');
-    setRealTable(real);
-    const { snapshots, maxGameweek: maxGW } = getGameweekSnapshots(mockMatches, initialStandings2023);
+  const applyData = useCallback((matchData, standingsData, initialStandings) => {
+    setMatches(matchData);
+    setOfficialStandings(standingsData);
+    setCustomTable(processMatches(matchData, initialStandings));
+    setRealTable(processMatches(matchData, initialStandings, 'real'));
+    const { snapshots, maxGameweek: maxGW } = getGameweekSnapshots(matchData, initialStandings);
     setGameweekSnapshots(snapshots);
     setMaxGameweek(maxGW);
     setCurrentGameweek(maxGW);
-    setUsingDemoData(true);
-    setError(null);
-    setLoading(false);
   }, []);
 
   const loadData = useCallback(async () => {
-    if (!apiKey) {
-      if (season === 2023) {
-        loadDemoData();
-      } else {
-        setError('No API key set. Select 2023 season for demo data or enter your API key.');
-        setUsingDemoData(false);
-        setLoading(false);
-      }
+    setLoading(true);
+    setError(null);
+
+    // Static seasons — load instantly from bundled data
+    const staticData = STATIC_SEASONS[season];
+    if (staticData) {
+      applyData(staticData.matches, staticData.officialStandings, staticData.initialStandings);
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    setUsingDemoData(false);
+    // Current season — try localStorage cache first (6-hour TTL)
+    const cached = readCache();
+    if (cached) {
+      const init = initialStandings2025.length
+        ? initialStandings2025
+        : getFallbackInitialStandings(cached.officialStandings);
+      applyData(cached.matches, cached.officialStandings, init);
+      setLoading(false);
+      return;
+    }
 
-    const cachedSeasonData = readSeasonCache(season);
-    if (cachedSeasonData) {
-      const matchData = cachedSeasonData.matches || [];
-      const standingsData = cachedSeasonData.officialStandings || null;
-      setMatches(matchData);
-      setOfficialStandings(standingsData);
-      setCustomTable(cachedSeasonData.customTable || []);
-      const initStandings =
-        INITIAL_STANDINGS[season] ||
-        getFallbackInitialStandings(standingsData?.standings?.[0]?.table || []);
-      setRealTable(processMatches(matchData, initStandings, 'real'));
-      const { snapshots, maxGameweek: maxGW } = getGameweekSnapshots(matchData, initStandings);
-      setGameweekSnapshots(snapshots);
-      setMaxGameweek(maxGW);
-      setCurrentGameweek(maxGW);
+    // Cache miss — fetch live from API
+    const apiKey = import.meta.env.VITE_API_KEY;
+    if (!apiKey) {
+      setError('No API key configured. Set VITE_API_KEY in your .env file.');
       setLoading(false);
       return;
     }
@@ -141,44 +107,18 @@ export function useLeague() {
         fetchStandings(season, apiKey),
       ]);
 
-      setMatches(matchData);
-      setOfficialStandings(standingsData);
+      writeCache(matchData, standingsData);
 
-      const initialStandings =
-        INITIAL_STANDINGS[season] ||
-        getFallbackInitialStandings(
-          standingsData?.standings?.[0]?.table || []
-        );
-
-      const table = processMatches(matchData, initialStandings);
-      setCustomTable(table);
-      setRealTable(processMatches(matchData, initialStandings, 'real'));
-
-      const { snapshots, maxGameweek: maxGW } = getGameweekSnapshots(matchData, initialStandings);
-      setGameweekSnapshots(snapshots);
-      setMaxGameweek(maxGW);
-      setCurrentGameweek(maxGW);
-
-      writeSeasonCache(season, {
-        matches: matchData,
-        officialStandings: standingsData,
-        customTable: table,
-      });
+      const init = initialStandings2025.length
+        ? initialStandings2025
+        : getFallbackInitialStandings(standingsData);
+      applyData(matchData, standingsData, init);
     } catch (err) {
-      if (season === 2023) {
-        loadDemoData();
-      } else {
-        setError(err.message);
-        setUsingDemoData(false);
-      }
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [season, apiKey, loadDemoData]);
-
-  useEffect(() => {
-    writeStoredApiKey(apiKey);
-  }, [apiKey]);
+  }, [season, applyData]);
 
   useEffect(() => {
     loadData();
@@ -187,8 +127,6 @@ export function useLeague() {
   return {
     season,
     setSeason,
-    apiKey,
-    setApiKey,
     matches,
     officialStandings,
     customTable,
@@ -199,7 +137,6 @@ export function useLeague() {
     setCurrentGameweek,
     loading,
     error,
-    usingDemoData,
     retry: loadData,
   };
 }
