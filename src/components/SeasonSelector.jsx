@@ -1,4 +1,4 @@
-const SEASONS = [2025,2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015];
+import { AVAILABLE_SEASONS } from '../hooks/useLeague';
 
 export default function SeasonSelector({ season, onChange }) {
   return (
@@ -12,9 +12,9 @@ export default function SeasonSelector({ season, onChange }) {
         onChange={(e) => onChange(Number(e.target.value))}
         className="border border-gray-300 rounded-md px-3 py-1.5 text-sm text-black shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
-        {SEASONS.map((s) => (
+        {AVAILABLE_SEASONS.map((s) => (
           <option key={s} value={s}>
-            {s}/{String(s + 1).slice(2)}{s === 2023 ? ' (Demo)' : ''}
+            {s}/{String(s + 1).slice(2)}
           </option>
         ))}
       </select>

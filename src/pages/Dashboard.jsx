@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import SeasonSelector from '../components/SeasonSelector';
 import CustomTable from '../components/CustomTable';
 import OfficialTable from '../components/OfficialTable';
@@ -9,7 +8,6 @@ import GameweekScrubber from '../components/GameweekScrubber';
 
 export default function Dashboard({
   season, setSeason,
-  apiKey, setApiKey,
   officialStandings,
   customTable,
   realTable,
@@ -19,17 +17,8 @@ export default function Dashboard({
   setCurrentGameweek,
   loading,
   error,
-  usingDemoData,
   retry,
 }) {
-
-  const [showApiInput, setShowApiInput] = useState(!import.meta.env.VITE_API_KEY);
-  const [inputKey, setInputKey] = useState(apiKey);
-
-  const handleApiKeySubmit = (e) => {
-    e.preventDefault();
-    setApiKey(inputKey.trim());
-  };
 
   // Determine which table data to display for the current gameweek
   const isAtMaxGameweek = currentGameweek >= maxGameweek || maxGameweek === 0;
@@ -58,61 +47,6 @@ export default function Dashboard({
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-4">
-        {/* API Key Section */}
-        {showApiInput && (
-          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-700 mb-1">
-                  🔑 football-data.org API Key
-                  <span className="ml-2 text-xs text-gray-400">(optional — 2023/24 demo works without a key)</span>
-                </p>
-                <form onSubmit={handleApiKeySubmit} className="flex gap-2">
-                  <input
-                    type="password"
-                    value={inputKey}
-                    onChange={(e) => setInputKey(e.target.value)}
-                    placeholder="Enter your API key…"
-                    className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  <button
-                    type="submit"
-                    className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Apply
-                  </button>
-                </form>
-              </div>
-              <button
-                onClick={() => setShowApiInput(false)}
-                className="text-gray-400 hover:text-gray-600 text-lg leading-none"
-                aria-label="Close"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Demo banner */}
-        {usingDemoData && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 text-sm text-amber-800 flex items-center gap-2">
-            <span>🎮</span>
-            <span>
-              <strong>Demo mode</strong> — showing 2023/24 season with sample match data.{' '}
-              {!showApiInput && (
-                <button
-                  onClick={() => setShowApiInput(true)}
-                  className="underline hover:no-underline"
-                >
-                  Add API key
-                </button>
-              )}{' '}
-              to load real data for all seasons.
-            </span>
-          </div>
-        )}
-
         {/* Scoring explanation */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm px-4 py-3 text-xs text-gray-600">
           <strong className="text-gray-800">Scoring Rules:</strong>{' '}

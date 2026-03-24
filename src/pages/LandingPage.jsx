@@ -110,7 +110,7 @@ export default function LandingPage({ customTable, realTable, matches, loading, 
 
       {/* Footer note */}
       <footer className="text-center text-gray-700 text-xs pb-6">
-        Based on {latestSeasonLabel} EPL data · Demo mode
+        Based on {latestSeasonLabel} EPL data
       </footer>
     </div>
   );
