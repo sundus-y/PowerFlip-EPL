@@ -5,6 +5,7 @@ import ComparisonTable from '../components/ComparisonTable';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import GameweekScrubber from '../components/GameweekScrubber';
+import RankOverTimeChart from '../components/RankOverTimeChart';
 
 export default function Dashboard({
   season, setSeason,
@@ -106,6 +107,16 @@ export default function Dashboard({
                 <OfficialTable officialStandings={officialStandings} />
               </div>
             </div>
+
+            {/* Rank over time chart */}
+            {maxGameweek > 0 && gameweekSnapshots.length > 0 && (
+              <div>
+                <RankOverTimeChart
+                  gameweekSnapshots={gameweekSnapshots}
+                  maxGameweek={maxGameweek}
+                />
+              </div>
+            )}
 
             {/* Real vs Reverse comparison */}
             {realTable.length > 0 && customTable.length > 0 && (
