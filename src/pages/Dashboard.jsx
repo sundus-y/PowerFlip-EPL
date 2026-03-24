@@ -18,6 +18,7 @@ export default function Dashboard({
   loading,
   error,
   retry,
+  onBack,
 }) {
 
   // Determine which table data to display for the current gameweek
@@ -34,13 +35,23 @@ export default function Dashboard({
       {/* Header */}
       <header className="bg-gradient-to-r from-blue-900 via-blue-800 to-purple-900 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              ⚡ PowerFlip <span className="text-yellow-400">EPL</span>
-            </h1>
-            <p className="text-blue-200 text-xs mt-0.5">
-              Reverse Strength Scoring System — points based on opponent rank
-            </p>
+          <div className="flex items-center gap-3">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="text-blue-300 hover:text-white transition-colors text-sm flex items-center gap-1"
+              >
+                ← Back
+              </button>
+            )}
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                ⚡ PowerFlip <span className="text-yellow-400">EPL</span>
+              </h1>
+              <p className="text-blue-200 text-xs mt-0.5">
+                Reverse Strength Scoring System — points based on opponent rank
+              </p>
+            </div>
           </div>
           <SeasonSelector season={season} onChange={setSeason} />
         </div>

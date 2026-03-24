@@ -25,5 +25,5 @@ export default function App() {
     );
   }
 
-  return <Dashboard {...leagueData} />;
+  return <Dashboard {...leagueData} onBack={() => setAppState('landing')} />;
 }
