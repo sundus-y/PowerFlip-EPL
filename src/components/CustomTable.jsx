@@ -38,9 +38,10 @@ export default function CustomTable({ customTable, officialStandings, prevTable,
   }
 
   return (
-    <div className="overflow-x-auto rounded-lg shadow">
+    <div className="rounded-lg shadow overflow-hidden">
+    <div className="overflow-x-auto overflow-y-auto max-h-[230px]">
       <table className="min-w-full text-sm">
-        <thead className="bg-gray-800 text-white">
+        <thead className="bg-gray-800 text-white sticky top-0 z-10">
           <tr>
             <th className="px-2 py-2 text-center w-8">#</th>
             <th className="px-3 py-2 text-left">Team</th>
@@ -101,11 +102,12 @@ export default function CustomTable({ customTable, officialStandings, prevTable,
           })}
         </tbody>
       </table>
-      <div className="flex gap-4 text-xs text-gray-500 p-2 bg-gray-50 border-t">
-        <span className="flex items-center gap-1"><span className="w-3 h-3 border-l-4 border-blue-500 inline-block"></span> Champions League</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 border-l-4 border-orange-400 inline-block"></span> Europa</span>
-        <span className="flex items-center gap-1"><span className="w-3 h-3 border-l-4 border-red-500 inline-block"></span> Relegation</span>
-      </div>
+    </div>
+    <div className="flex gap-4 text-xs text-gray-500 p-2 bg-gray-50 border-t">
+      <span className="flex items-center gap-1"><span className="w-3 h-3 border-l-4 border-blue-500 inline-block"></span> Champions League</span>
+      <span className="flex items-center gap-1"><span className="w-3 h-3 border-l-4 border-orange-400 inline-block"></span> Europa</span>
+      <span className="flex items-center gap-1"><span className="w-3 h-3 border-l-4 border-red-500 inline-block"></span> Relegation</span>
+    </div>
     </div>
   );
 }

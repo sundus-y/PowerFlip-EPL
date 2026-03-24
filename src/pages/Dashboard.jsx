@@ -5,6 +5,7 @@ import ComparisonTable from '../components/ComparisonTable';
 import LoadingSpinner from '../components/LoadingSpinner';
 import ErrorMessage from '../components/ErrorMessage';
 import GameweekScrubber from '../components/GameweekScrubber';
+import RankOverTimeChart from '../components/RankOverTimeChart';
 
 export default function Dashboard({
   season, setSeason,
@@ -36,16 +37,11 @@ export default function Dashboard({
       <header className="bg-gradient-to-r from-blue-900 via-blue-800 to-purple-900 text-white shadow-lg">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="text-blue-300 hover:text-white transition-colors text-sm flex items-center gap-1"
-              >
-                ← Back
-              </button>
-            )}
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">
+            <div
+              onClick={onBack}
+              className={onBack ? "cursor-pointer group" : ""}
+            >
+              <h1 className="text-2xl font-bold tracking-tight group-hover:text-yellow-300 transition-colors">
                 ⚡ PowerFlip <span className="text-yellow-400">EPL</span>
               </h1>
               <p className="text-blue-200 text-xs mt-0.5">
@@ -106,6 +102,17 @@ export default function Dashboard({
                 <OfficialTable officialStandings={officialStandings} />
               </div>
             </div>
+
+            {/* Rank over time chart */}
+            {maxGameweek > 0 && gameweekSnapshots.length > 0 && (
+              <div>
+                <RankOverTimeChart
+                  gameweekSnapshots={gameweekSnapshots}
+                  maxGameweek={maxGameweek}
+                  currentGameweek={currentGameweek}
+                />
+              </div>
+            )}
 
             {/* Real vs Reverse comparison */}
             {realTable.length > 0 && customTable.length > 0 && (
