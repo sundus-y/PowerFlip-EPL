@@ -149,3 +149,68 @@ describe('processMatches', () => {
     expect(teamB.goalDifference).toBe(-2);
   });
 });
+
+describe('processMatches — real mode (3/1/0 scoring)', () => {
+  it('awards 3 points for a win', () => {
+    const standings = makeStandings(['A', 'B']);
+    const matches = [makeMatch(1, 'A', 'B', 2, 0)];
+    const result = processMatches(matches, standings, 'real');
+
+    const teamA = result.find((t) => t.name === 'A');
+    const teamB = result.find((t) => t.name === 'B');
+
+    expect(teamA.wins).toBe(1);
+    expect(teamA.points).toBe(3);
+    expect(teamB.losses).toBe(1);
+    expect(teamB.points).toBe(0);
+  });
+
+  it('awards 1 point each for a draw', () => {
+    const standings = makeStandings(['A', 'B']);
+    const matches = [makeMatch(1, 'A', 'B', 1, 1)];
+    const result = processMatches(matches, standings, 'real');
+
+    const teamA = result.find((t) => t.name === 'A');
+    const teamB = result.find((t) => t.name === 'B');
+
+    expect(teamA.draws).toBe(1);
+    expect(teamB.draws).toBe(1);
+    expect(teamA.points).toBe(1);
+    expect(teamB.points).toBe(1);
+  });
+
+  it('real mode ignores opponent position for points (same points regardless of rank)', () => {
+    // A=rank1, B=rank20: regardless of ranks, win = 3 pts in real mode
+    const standings = makeStandings(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
+                                     'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T']);
+    const matchLow = [makeMatch(1, 'A', 'T', 1, 0)]; // A beats rank-20 team
+    const matchHigh = [makeMatch(2, 'A', 'B', 1, 0)]; // A beats rank-2 team
+    const r1 = processMatches(matchLow, standings, 'real');
+    const r2 = processMatches(matchHigh, standings, 'real');
+    expect(r1.find((t) => t.name === 'A').points).toBe(3);
+    expect(r2.find((t) => t.name === 'A').points).toBe(3);
+  });
+
+  it('real mode produces different points than reverse mode for the same match', () => {
+    // In reverse mode, win vs rank-1 earns 20 pts; in real mode it earns 3 pts
+    const standings = makeStandings(['A', 'B']);
+    const matches = [makeMatch(1, 'B', 'A', 1, 0)]; // B beats rank-1 A
+    const reverseResult = processMatches(matches, standings, 'reverse');
+    const realResult = processMatches(matches, standings, 'real');
+
+    const bReverse = reverseResult.find((t) => t.name === 'B');
+    const bReal = realResult.find((t) => t.name === 'B');
+
+    expect(bReverse.points).toBe(20); // reversePos(1) = 20
+    expect(bReal.points).toBe(3);     // standard win = 3
+  });
+
+  it('defaults to reverse mode when mode parameter is omitted', () => {
+    // No mode arg → default 'reverse'
+    const standings = makeStandings(['A', 'B']);
+    const matches = [makeMatch(1, 'B', 'A', 1, 0)]; // B beats rank-1 A
+    const result = processMatches(matches, standings);
+    const teamB = result.find((t) => t.name === 'B');
+    expect(teamB.points).toBe(20);
+  });
+});

@@ -76,6 +76,7 @@ export function useLeague() {
   const [matches, setMatches] = useState([]);
   const [officialStandings, setOfficialStandings] = useState(null);
   const [customTable, setCustomTable] = useState([]);
+  const [realTable, setRealTable] = useState([]);
   const [gameweekSnapshots, setGameweekSnapshots] = useState([]);
   const [maxGameweek, setMaxGameweek] = useState(0);
   const [currentGameweek, setCurrentGameweek] = useState(0);
@@ -88,6 +89,8 @@ export function useLeague() {
     setOfficialStandings(mockStandings);
     const table = processMatches(mockMatches, initialStandings2023);
     setCustomTable(table);
+    const real = processMatches(mockMatches, initialStandings2023, 'real');
+    setRealTable(real);
     const { snapshots, maxGameweek: maxGW } = getGameweekSnapshots(mockMatches, initialStandings2023);
     setGameweekSnapshots(snapshots);
     setMaxGameweek(maxGW);
@@ -123,6 +126,7 @@ export function useLeague() {
       const initStandings =
         INITIAL_STANDINGS[season] ||
         getFallbackInitialStandings(standingsData?.standings?.[0]?.table || []);
+      setRealTable(processMatches(matchData, initStandings, 'real'));
       const { snapshots, maxGameweek: maxGW } = getGameweekSnapshots(matchData, initStandings);
       setGameweekSnapshots(snapshots);
       setMaxGameweek(maxGW);
@@ -148,6 +152,7 @@ export function useLeague() {
 
       const table = processMatches(matchData, initialStandings);
       setCustomTable(table);
+      setRealTable(processMatches(matchData, initialStandings, 'real'));
 
       const { snapshots, maxGameweek: maxGW } = getGameweekSnapshots(matchData, initialStandings);
       setGameweekSnapshots(snapshots);
@@ -187,6 +192,7 @@ export function useLeague() {
     matches,
     officialStandings,
     customTable,
+    realTable,
     gameweekSnapshots,
     maxGameweek,
     currentGameweek,
